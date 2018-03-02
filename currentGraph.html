@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Current Graph</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+    <script type="application/javascript" src="Chart.js/Chart.js"></script>
+    <script type="application/javascript" src="Chart.js/Chart.bundle.js"></script>
+    <script type="application/javascript" src="js/bootstrap.js"></script>
+    <script type="application/javascript" src="js/jquery.min.js"></script>
+    <link type="text/css" href="css/bootstrap.css">
+    <link type="text/css" href="css/bootstrap-theme.css">
+    <script>
+        var hours = 0;
+        var minutes = 0;
+        var secounds = 0;
+        var secoundsCounter;
+        
+        function onbeforeunloadFunction(){
+            return "Do you want to leave?";
+        }
+
+        function onunloadFunction(){
+            console.log("Closing window");
+            clearInterval(datainterval);
+            clearInterval(secoundsCounter);
+            clearInterval(error);
+            localStorage.setItem('currentgraph','true');
+        }
+
+        function loadData() {
+            var graphData = localStorage.getItem('currentgraphdata');
+            console.log(JSON.parse(graphData));
+            var raw = JSON.parse(graphData);
+            document.getElementById("driver").innerHTML = "Driver Id :"+raw['d_sr_no'];
+            document.getElementById("led").innerHTML = "Led Id :"+raw['l_sr_no'];
+            document.getElementById("model").innerHTML = "Model :"+raw['model'];
+
+            if (raw['company']  === undefined){
+                document.getElementById("company").innerHTML = "Description :"+raw['description'];
+            }
+            else{
+                document.getElementById("company").innerHTML = "Company :"+raw['company'];
+            }
+
+            resetGraph();
+
+            datainterval = setInterval(appendNewData, 3000);
+            secoundsCounter = setInterval(timeCounter, 1000);
+        }
+
+        function timeCounter() {
+            document.getElementById("time").innerHTML =  hours+":"+minutes+":"+secounds;
+            console.log("Date :"+(hours+":"+minutes+":"+secounds)) ;
+            secounds++;
+            if (secounds >= 60) {
+                secounds = 0;
+                minutes++;
+            }
+            if (minutes >= 60){
+                hours++;
+                minutes = 0;
+            }
+        }
+
+        function appendNewData() {
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            } else {  // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            xmlhttp.open("GET", "http://192.168.2.4:8000/data", true);
+            xmlhttp.send();
+
+            xmlhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    clearInterval(error);
+                    document.getElementById('error').style.display = 'none';
+                    var raw = JSON.parse(this.responseText);
+                    console.log("Current Data :" + raw);
+                    console.log(raw);
+
+                    var l, m, n;
+                    for (l in raw['Answer']) {
+                        for (m in raw['Answer'][l]) {
+                            if (m === 'temp') {
+                                myLineChart.data.datasets[0].data = raw['Answer'][l][m];
+                                document.getElementById("tempreature").innerHTML = "Tempreature H:"+Math.max.apply(Math, raw['Answer'][l][m]) + "&nbspL:" + Math.min.apply(Math, raw['Answer'][l][m]);
+                            }
+                            else if (m === 'light') {
+                                myLineChart.data.datasets[3].data = raw['Answer'][l][m];
+                                document.getElementById("light").innerHTML = "Light H:"+Math.max.apply(Math, raw['Answer'][l][m]) + "&nbspL:" + Math.min.apply(Math, raw['Answer'][l][m]);
+                            }
+                            else if (m === 'voltage') {
+                                myLineChart.data.datasets[1].data = raw['Answer'][l][m];
+                                document.getElementById("voltage").innerHTML = "Voltage H:"+Math.max.apply(Math, raw['Answer'][l][m]) + "&nbspL:" + Math.min.apply(Math, raw['Answer'][l][m]);
+                            }
+                            else if (m === 'current') {
+                                myLineChart.data.datasets[2].data = raw['Answer'][l][m];
+                                document.getElementById("current").innerHTML = "Current H:"+Math.max.apply(Math, raw['Answer'][l][m]) + "&nbspL:" + Math.min.apply(Math, raw['Answer'][l][m]);
+                            }
+                            else if (m === 'time') {
+                                myLineChart.data.labels = raw['Answer'][l][m];
+                            }
+                        }
+                    }
+                    myLineChart.updateDatasets();
+                    myLineChart.update();
+
+                }
+                else if (this.status == 0) {
+                    document.getElementById("error").style.display = 'block';
+                    error = setInterval(appendNewData, 3000);
+                }
+            };
+        }
+
+        function resetGraph() {
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            } else {  // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            xmlhttp.open("GET", "http://192.168.2.4:8000/resetGraph", true);
+            xmlhttp.send();
+
+            xmlhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    clearInterval(error);
+                    document.getElementById('error').style.display = 'none';
+                    document.getElementById('errorreset').style.display = 'none';
+                    var raw = JSON.parse(this.responseText);
+                    console.log("Current Data :" + raw);
+                    console.log(raw);
+                    if (raw["status"] != "200"){
+                        document.getElementById('errorreset').style.display = 'block';
+                    }
+                }
+                else if (this.status == 0) {
+                    document.getElementById("error").style.display = 'block';
+                    window.close();
+                }
+            };
+        }
+    </script>
+</head>
+<body  onload="loadData()" onbeforeunload="return onbeforeunloadFunction()" onunload="onunloadFunction()">
+
+<div class="container">
+    <div class="col-lg-6 col-md-12 colsm-12 col-xs-12">
+        <div class="center-block">
+            <h3 id="driver" style="display: inline-block; padding: 10px; background-color: #006495; color: #F4D00C;margin: 0"></h3>
+            <h3 id="led" style="display: inline-block; padding: 10px; background-color: #F4D00C; color: #006495; margin: 0"></h3>
+            <h3 id="company" style="display: inline-block; padding: 10px; background-color: #006495; color: #F4D00C; margin: 0"></h3>
+            <h3 id="model" style="display: inline-block; padding: 10px; background-color: #F4D00C; color: #006495; margin: 0"></h3>
+
+            <!--<div style="">-->
+                <!--<span class="text-center"><b>Current</b></span>-->
+            <!--</div>-->
+            <h3 id="current" style="display: inline-block; padding: 10px; background-color: #462066; color: #F4D00C; margin: 0"></h3>
+            <!--<div style="">-->
+                <!--<span class="text-center"><b>Tempreature</b></span>-->
+            <!--</div>-->
+            <h3 id="tempreature" style="display: inline-block; padding: 10px; background-color: #FF7A5A; color: #006495; margin: 0"></h3>
+            <!--<div style="">-->
+                <!--<span class="text-center"><b>Voltage</b></span>-->
+            <!--</div>-->
+            <h3 id="voltage" style="display: inline-block; padding: 10px; background-color: #00AAA0; color: #F4D00C; margin: 0"></h3>
+            <!--<div style="">-->
+                <!--<span class="text-center"><b>Light</b></span>-->
+            <!--</div>-->
+            <h3 id="light" style="display: inline-block; padding: 10px; background-color: #FFB85F; color: #006495; margin: 0"></h3>
+            <h3 id="time" style="display: inline-block; padding: 10px; background-color: darkred; color: white; margin: 0"></h3>
+        </div>
+    </div>
+    <div class="col-lg-6 col-md-12 colsm-12 col-xs-12">
+        <canvas id="myChart" width="1000px" height="440px"></canvas>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="error">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Server Cannot be found</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- Error Modal -->
+<div class="modal" id="errorreset">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Reset Cannot happen restart server</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+
+    var canvas = document.getElementById('myChart').getContext("2d");
+    var data = {
+        labels: [],
+        datasets: [
+
+            {
+                label: "Current",
+                fill: true,
+                lineTension: 0.1,
+                backgroundColor: "#462066",
+                borderColor: "#462066",
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "#462066",
+                pointBackgroundColor: "#462066",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "#462080",
+                pointHoverBorderColor: "#462080",
+                pointHoverBorderWidth: 2,
+                pointRadius: 5,
+                pointHitRadius: 10,
+                data: []
+            },
+
+            {
+                label: "Temperature",
+                fill: true,
+                lineTension: 0.1,
+                backgroundColor: "#FF7A5A",
+                borderColor: "#FF7A5A",
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "#FF7A5A",
+                pointBackgroundColor: "#FF7A5A",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "#FF7A5A",
+                pointHoverBorderColor: "#FF7A5A",
+                pointHoverBorderWidth: 2,
+                pointRadius: 5,
+                pointHitRadius: 10,
+                data: []
+            },
+
+            {
+                label: "Voltage",
+                fill: true,
+                lineTension: 0.1,
+                backgroundColor: "#00AAA0",
+                borderColor: "#00AAA0",
+                borderCapStyle: '#00AAA0',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "#00AAA0",
+                pointBackgroundColor: "#00AAA0",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "#00AAA0",
+                pointHoverBorderColor: "#00AAA0",
+                pointHoverBorderWidth: 2,
+                pointRadius: 5,
+                pointHitRadius: 10,
+                data: []
+            },
+
+            {
+                label: "Light",
+                fill: true,
+                lineTension: 0.1,
+                backgroundColor: "#FFB85F",
+                borderColor: "#FFB85F",
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "#FFB85F",
+                pointBackgroundColor: "#FFB85F",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "#FFB85F",
+                pointHoverBorderColor: "#FFB85F",
+                pointHoverBorderWidth: 2,
+                pointRadius: 5,
+                pointHitRadius: 10,
+                data: []
+            }
+        ]
+    };
+
+    var option = {
+        showLines: true,
+        responsive: true,
+        legend: {
+            display: true,
+            labels: {
+                fontColor: 'black',
+                fontSize: 15
+            }
+        },
+        tooltips: {
+		    mode: 'index',
+            titleFontSize: 18,
+            bodyFontSize: 16,
+            position: 'nearest'
+//            backgroundColor: '#8ED2C9',
+//            bodyFontColor: '#462066',
+//            titleFontColor: '#462066'
+        },
+		hover: {
+		    mode: 'index'
+        },
+		scales: {
+		    xAxes: [{
+			    type: "time",
+                time: {
+                    format: 'hh-mm-ss'
+                },
+				scaleLabel: {
+				    display: true,
+					labelString: 'Time'
+                }
+            }],
+			yAxes: [{
+			    stacked: true,
+				scaleLabel: {
+				    display: true,
+					labelString: 'Value'
+                }
+            }]
+        }
+    };
+    var myLineChart = Chart.Line(canvas,{
+        data:data,
+      options:option
+    });
+
+</script>
+</body>
+</html>

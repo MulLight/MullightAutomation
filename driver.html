@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Driver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/app.css">
+    <script type="application/javascript" src="js/jquery.min.js"></script>
+    <script type="application/javascript" src="js/bootstrap.min.js"></script>
+    <script type="application/javascript" src="Chart.js/Chart.min.js"></script>
+    <script type="application/javascript" src="Chart.js/Chart.bundle.min.js"></script>
+    <script>
+        var error;
+        var drivers = 0;
+        var datainterval;
+        var printtableonce = true;
+        var adddevicesonce = true;
+        var drivermodelNo = [];
+        var drivermodelNoCount = [];
+        var driverdate = [];
+        var driverdateCount = [];
+
+        function closemodel() {
+            document.getElementById("success").style.display = 'none';
+            document.getElementById("dbredudanterrorr").style.display = 'none';
+            document.getElementById("dboperationrrorr").style.display = 'none';
+
+            clearInterval(datainterval);
+        }
+
+        function tableload() {
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            } else {  // code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            xmlhttp.open("GET","http://192.168.2.4:8000/table",true);
+            xmlhttp.send();
+
+            xmlhttp.onreadystatechange=function() {
+                if (this.readyState == 4 && this.status == 200 && printtableonce) {
+                    clearInterval(error);
+                    document.getElementById('dberror').style.display = 'none';
+                    document.getElementById('error').style.display = 'none';
+                    var raw = JSON.parse(this.responseText);
+                    console.log(raw);
+
+                    if (raw['status'] == 504){
+                        document.getElementById('dberror').style.display = 'block';
+                        error = setInterval(tableload,3000);
+                    }
+                    else {
+                        printtableonce = false;
+                        var i, j, k;
+                        var dynamic_data, row, cell1, cell2, cell3;
+                        for (i in raw['Answer']) {
+                            k = 0;
+                            if (i == 0) {
+                                dynamic_data = document.getElementById('driver');
+                                for (j in raw['Answer'][i]) {
+
+                                    row = dynamic_data.insertRow(k);
+                                    cell1 = row.insertCell(0);
+                                    cell2 = row.insertCell(1);
+                                    cell3 = row.insertCell(2);
+
+                                    cell1.innerHTML = raw['Answer'][i][j]['sr_no'];
+                                    cell2.innerHTML = raw['Answer'][i][j]['model'];
+                                    cell3.innerHTML = raw['Answer'][i][j]['date'];
+
+//                                    alert(drivermodelNo.indexOf(cell2.innerHTML));
+                                    if (drivermodelNo.indexOf(cell2.innerHTML) != -1)
+                                        drivermodelNoCount[drivermodelNo.indexOf(cell2.innerHTML)] += 1;
+                                    else {
+                                        drivermodelNoCount.push(1);
+                                        drivermodelNo.push(cell2.innerHTML);
+                                    }
+                                    if (driverdate.indexOf(cell3.innerHTML) != -1)
+                                        driverdateCount[driverdate.indexOf(cell3.innerHTML)] += 1;
+                                    else {
+                                        driverdateCount.push(1);
+                                        driverdate.push(cell3.innerHTML);
+                                    }
+                                    drivers++;
+                                    k++;
+                                }
+                            }
+                        }
+                    }
+                    document.getElementById("countDriver").innerHTML = "Total Count : " + '<h4><strong>'+drivers+'</strong></h4>';
+                    loadData();
+
+                }
+                else if (this.status == 0){
+                    document.getElementById("dberror").style.display = 'none';
+                    document.getElementById("error").style.display = 'block';
+                    error = setInterval(tableload(),3000);
+                }
+            };
+        }
+
+        function clearData() {
+            document.getElementById("id").value = "";
+            document.getElementById("model").value = "";
+        }
+
+        function addIDs() {
+            var flag = 0;
+            if (document.getElementById("id").value == "" || document.getElementById("id").value == undefined ){
+                document.getElementById("id_add").className = "form-group has-error";
+                flag++;
+            }
+            else
+                document.getElementById("id_add").className = "form-group has-success";
+
+            if (document.getElementById("model").value == "" || document.getElementById("model").value == undefined ){
+                document.getElementById("model_add").className = "form-group has-error";
+                flag++;
+            }
+            else
+                document.getElementById("model_add").className = "form-group has-success";
+
+            var date = document.getElementById("date").value;
+            if (date == "" || date == undefined ){
+                date = "00-00-00";
+            }
+
+            if (flag == 0){
+                if (window.XMLHttpRequest) {
+                    // code for IE7+, Firefox, Chrome, Opera, Safari
+                    xmlhttp=new XMLHttpRequest();
+                } else {  // code for IE6, IE5
+                    xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                var httpstring  = "http://192.168.2.4:8000/addDevice?id=";
+                httpstring += document.getElementById("id").value;
+                httpstring += "&model=";
+                httpstring += document.getElementById("model").value;
+                httpstring += "&date=";
+                httpstring += date;
+                httpstring += "&dl=";
+                httpstring += true;
+
+                xmlhttp.open("GET",httpstring,true);
+                xmlhttp.send();
+
+                xmlhttp.onreadystatechange=function() {
+                    if (this.readyState == 4 && this.status == 200 && adddevicesonce) {
+                        document.getElementById('error').style.display = 'none';
+                        var raw = JSON.parse(this.response);
+                        console.log("Add Driver ot driver response :" + raw);
+
+                        if (raw['status'] == 504) {
+                            document.getElementById('dberror').style.display = 'block';
+                            error = setInterval(addIDs, 3000);
+                        }
+                        else if (raw['status'] == 501) {
+                            document.getElementById('dbredudanterrorr').style.display = 'block';
+                            document.getElementById("id_add").className = "form-group has-error";
+                            document.getElementById("model_add").className = "form-group has-error";
+                        }
+                        else if (raw['status'] == 503)
+                            document.getElementById('dboperationrrorr').style.display = 'block';
+                        else {
+                            adddevicesonce = false;
+                            document.getElementById('id').value = "";
+                            document.getElementById('model').value = "";
+
+                            document.getElementById('success').style.display = 'block';
+                            sessionStorage.setItem('update','true');
+
+                            localStorage.setItem('driverdataupdated',true);
+                            window.location.reload();
+                        }
+                    }
+                    else if (this.status == 0){
+                        document.getElementById("dberror").style.display = 'none';
+                        document.getElementById("error").style.display = 'block';
+                        error = setInterval(checkIDs,3000);
+                    }
+                };
+            }
+        }
+    </script>
+</head>
+<body onload="tableload()" style="overflow-x: hidden">
+
+<div class="container-fluid">
+    <!--<div class="row black">
+        <h1 class="text-center ">Mul Light Automation</h1>
+    </div>-->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <h3 class="text-center input-group">
+                Driver
+                <span id="countDriver" class="input-group-addon">Total Count :0</span>
+            </h3>
+            <table class="table table-responsive table-hover text-center" style="max-height: 500%; height: 300%;">
+                <thead>
+                <tr>
+                    <th>Serial No</th>
+                    <th>Model</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
+                <tbody id="driver" style="max-height: 400%; height: 340%"></tbody>
+            </table>
+        </div>
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="row">
+                <h3 class="text-center">Add driver</h3>
+                <br>
+                <form class="form-horizontal">
+                    <br>
+                    <div id="id_add" class="form-group">
+                        <label class="col-lg-4 control-label" for="id"><h4><strong>Add Driver</strong></h4></label>
+                        <div class="col-lg-5">
+                            <input type="text" class="form-control" id="id" placeholder="Id" autocomplete="on" required>
+                        </div>
+                    </div>
+                    <div id="model_add" class="form-group">
+                        <label class="col-lg-4 control-label" for="model"><h4><strong>Model No</strong></h4></label>
+                        <div class="col-lg-5">
+                            <input type="text" class="form-control" id="model" placeholder="Model No" autocomplete="on" required>
+                        </div>
+                    </div>
+                    <div id="id_date" class="form-group">
+                        <label class="col-lg-4 control-label" for="id"><h4><strong>Add Date</strong></h4></label>
+                        <div class="col-lg-5">
+                            <input type="text" class="form-control" id="date" placeholder="DD-MM-YY (12-04-17)" autocomplete="on" required>
+                        </div>
+                    </div>
+                    <div class="btn-group col-lg-offset-5 col-md-offset-6 col-sm-offset-7 col-xs-offset-4">
+                        <button id="add" type="button" class="btn btn-lg btn-primary" onclick="addIDs()">Add</button>
+                        <button id="clear" type="button" class="btn btn-lg btn-info" onclick="clearData()">Clear</button>
+                    </div>
+                </form>
+            </div>
+            <div class="row center-block" >
+                <br/>
+                <div style="height: 300px; width: 300px;display: inline-block">
+                    <h4 class="text-center">Model wise analysis</h4>
+                    <canvas id="chart-area1" width="300" height="300"></canvas>
+                </div>
+
+                <div style="height: 300px; width: 300px; display: inline-block">
+                    <h4 class="text-center">Date wise analysis</h4>
+                    <canvas id="chart-area2" width="300" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="error">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Server Cannot be found</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- DB Error Modal -->
+<div class="modal" id="dberror">
+    <div class="modal-dialog ">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Database Cannot be found</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Driver or lod already exists Modal -->
+<div class="modal" id="dbredudanterrorr">
+    <div class="modal-dialog ">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <button type="button" class="close" onclick="closemodel()">&times;</button>
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Same value found in Database</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- DB operation cannot be performed Modal -->
+<div class="modal" id="dboperationrrorr">
+    <div class="modal-dialog ">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <button type="button" class="close" onclick="closemodel()">&times;</button>
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Operation can not be performed</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal" id="success">
+    <div class="modal-dialog ">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #006400; color: white">
+                <button type="button" class="close" onclick="closemodel()">&times;</button>
+                <h2 class="modal-title text-center">Success</h2>
+            </div>
+            <div class="modal-body" style="background-color: #32CD32; color: black">
+                <h3 class="text-center">Operation Performed successfully</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(window).focus(function () {
+        var driver = localStorage.getItem('driverdataupdated');
+        var dispatched = localStorage.getItem('dispatcheddata');
+        console.log(typeof driver);
+        if (driver === "true"){
+            localStorage.setItem('driverdataupdated',false);
+            window.location.reload(true);
+        }
+        if (dispatched === "true"){
+            // localStorage.setItem('dispatcheddata',false);
+            window.location.reload(true);
+        }
+    });
+
+    // window.onbeforeunload = function(e){
+    //     console.log(e.currentTarget.performance.navigation.type);
+    //     if (e.currentTarget.performance.navigation.type == 0) {
+    //         return "Do you want to leave driver.html?"
+    //     }
+    // };
+
+    window.onunload = function(){
+        console.log("Closing window");
+        clearInterval(error);
+    };
+
+    var data1 = {
+	    labels: [],
+	    datasets: [{
+		    data: [],
+            backgroundColor: [
+                "#004C70",
+                "#0093D1",
+                "#F2635F",
+                "#F4D00C",
+                "#E0A025",
+                "#462066",
+                "#FFB85F",
+                "#FF7A5A",
+                "#00AAA0",
+                "#8ED2C9",
+                "#FCF4D9",
+                "#525564",
+                "#74828F",
+                "#96C0CE",
+                "#BEB9B5",
+                "#C25B56",
+                "#FEF6EB",
+                "#44B3C2",
+                "#F1A94E",
+                "#E45641",
+                "#5D4C46",
+                "#7B8D8E",
+                "#F2EDD8",
+                "#6F3662",
+                "#FF7182",
+                "#FFAE5D",
+                "#F8F8F2",
+                "#F8DEBD",
+                "#9F6164",
+                "#814374",
+                "#51A39D",
+                "#B7695C",
+                "#CDBB79",
+                "#F2F2F2",
+                "#06425C"
+            ]
+        }]
+    };
+	var data2 = {
+	    labels: [],
+	    datasets: [{
+		    data: [],
+            backgroundColor: [
+                "#004C70",
+                "#0093D1",
+                "#F2635F",
+                "#F4D00C",
+                "#E0A025",
+                "#462066",
+                "#FFB85F",
+                "#FF7A5A",
+                "#00AAA0",
+                "#8ED2C9",
+                "#FCF4D9",
+                "#525564",
+                "#74828F",
+                "#96C0CE",
+                "#BEB9B5",
+                "#C25B56",
+                "#FEF6EB",
+                "#44B3C2",
+                "#F1A94E",
+                "#E45641",
+                "#5D4C46",
+                "#7B8D8E",
+                "#F2EDD8",
+                "#6F3662",
+                "#FF7182",
+                "#FFAE5D",
+                "#F8F8F2",
+                "#F8DEBD",
+                "#9F6164",
+                "#814374",
+                "#51A39D",
+                "#B7695C",
+                "#CDBB79",
+                "#F2F2F2",
+                "#06425C"
+            ]
+        }]
+    };
+    var options = {
+        responsive: true,
+        legend: {
+            display: true,
+            labels: {
+                fontColor: 'black',
+                fontSize: 15
+            }
+
+        },
+        title:{
+		    display:true,
+			text:"Model and Date wise analysis"
+        },
+        tooltips: {
+            enabled: true,
+            titleFontSize: 18,
+            bodyFontSize: 16
+        }
+    };
+
+	function loadData() {
+//	    console.log(drivermodelNo);
+//	    console.log(drivermodelNoCount);
+	    myPiChart1.data.datasets[0].data = drivermodelNoCount;
+	    myPiChart1.data.labels = drivermodelNo;
+
+	    myPiChart2.data.datasets[0].data = driverdateCount;
+	    myPiChart2.data.labels = driverdate;
+
+	    myPiChart1.updateDatasets();
+	    myPiChart1.update();
+	    myPiChart2.updateDatasets();
+	    myPiChart2.update();
+    }
+
+    var canvas1 = document.getElementById("chart-area1").getContext("2d");
+	var canvas2 = document.getElementById("chart-area2").getContext("2d");
+	var myPiChart1 = new Chart(canvas1,{
+	    type:'pie',
+	    data:data1,
+        config:options
+    });
+	var myPiChart2 = new Chart(canvas2,{
+	    type:'pie',
+	    data:data2,
+        config:options
+    });
+
+
+</script>
+
+</body>
+</html>

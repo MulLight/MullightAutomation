@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Mul Light</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+    <link type="text/css" href="css/bootstrap-theme.css">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/app.css">
+    <script type="application/javascript" src="js/jquery.min.js"></script>
+    <script type="application/javascript" src="js/bootstrap.min.js"></script>
+    <script type="application/javascript" src="Chart.js/Chart.min.js"></script>
+    <script type="application/javascript" src="Chart.js/Chart.bundle.min.js"></script>
+    <style>
+        #driverH3:hover{
+            background-color: #122b40;
+            color: white;
+        }
+        #ledH3:hover, #countLed:hover{
+            background-color: #122b40;
+            color: white;
+        }
+        #dispatchedH3:hover, #countDispatch:hover{
+            background-color: #122b40;
+            color: white;
+        }
+    </style>
+    <script>
+        var button_count = 0;
+        var graphdata = {};
+        var error;
+        var leds = [];
+        var drivers = [];
+        var datainterval;
+        var printtableonce = true;
+        var adddispatcheddataonce = true;
+        var adddevicesonce = true;
+        var entryalreadyexists = false;
+//        var ledData;
+//        var driverData;
+//        var dispatchedData;
+
+        function checkIDs() {
+            var flag = 0;
+            if (drivers.indexOf(document.getElementById("inputdriver").value) < 0){
+                document.getElementById("driver_search").className = "form-group has-error";
+                flag++;
+            }
+            else {
+                document.getElementById("driver_search").className = "form-group has-success";
+            }
+
+            if (leds.indexOf(document.getElementById("inputled").value) < 0){
+                document.getElementById("led_search").className = "form-group has-error";
+                flag++;
+            }
+            else {
+                document.getElementById("led_search").className = "form-group has-success";
+            }
+
+            if (document.getElementById("add_Company").value == "" || document.getElementById("add_Company").value == "undefined"){
+                document.getElementById("addCompany").className = "form-group has-error";
+                flag++;
+            }
+            else {
+                document.getElementById("addCompany").className = "form-group has-success";
+            }
+
+            if (document.getElementById("add_Model").value == "" || document.getElementById("add_Model").value == "undefined"){
+                document.getElementById("addModel").className = "form-group has-error";
+                flag++;
+            }
+            else {
+                document.getElementById("addModel").className = "form-group has-success";
+            }
+
+            if (flag == 0){
+                document.getElementById("check").className = 'btn btn-lg btn-default disabled';
+                document.getElementById("test").className = 'btn btn-lg btn-primary';
+                button_count++;
+            }
+        }
+
+        function closemodel() {
+
+            document.getElementById("success").style.display = 'none';
+            document.getElementById("dbredudanterrorr").style.display = 'none';
+            document.getElementById("dboperationrrorr").style.display = 'none';
+
+            document.getElementById("ok").className = 'btn btn-lg btn-success';
+            document.getElementById("fail").className = 'btn btn-lg btn-danger';
+            clearInterval(datainterval);
+        }
+
+        function tableload() {
+
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            } else {  // code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            xmlhttp.open("GET","http://192.168.2.4:8000/table",true);
+            xmlhttp.send();
+
+            xmlhttp.onreadystatechange=function() {
+                if (this.readyState == 4 && this.status == 200 && printtableonce) {
+                    clearInterval(error);
+                    document.getElementById('dberror').style.display = 'none';
+                    document.getElementById('error').style.display = 'none';
+                    var raw = JSON.parse(this.responseText);
+                    console.log(raw);
+
+                    if (raw['status'] == 504){
+                        document.getElementById('dberror').style.display = 'block';
+                        error = setInterval(tableload,3000);
+                    }
+                    else {
+                        printtableonce = false;
+                        var i, j, k;
+                        //var l, m, n;
+                        var flag = false;
+                        var dynamic_data, row, cell1, cell2, cell3, cell4, cell5, cell6, cell7;
+                        var dispatchcount = 0;
+
+                        for (i in raw['Answer']) {
+
+                            k = 0;
+                            if (i == 0) {
+                                dynamic_data = document.getElementById('driver');
+                                flag = true;
+//                                driverData = raw['Answer'][i];
+                            }
+                            else if (i == 1) {
+                                dynamic_data = document.getElementById('led');
+                                flag = false;
+//                                ledData = raw['Answer'][i];
+                            }
+                            else if (i == 2) {
+                                dynamic_data = document.getElementById('dispatch');
+                                dispatchcount = raw['Answer'][i].length;
+//                                dispatchedData = raw['Answer'][i];
+                            }
+                            for (j in raw['Answer'][i]) {
+
+                                row = dynamic_data.insertRow(k);
+                                cell1 = row.insertCell(0);
+                                cell2 = row.insertCell(1);
+                                cell3 = row.insertCell(2);
+
+                                if (i == 2) {
+                                    cell4 = row.insertCell(3);
+                                    cell5 = row.insertCell(4);
+                                    cell6 = row.insertCell(5);
+                                    cell7 = row.insertCell(6);
+                                    cell1.innerHTML = raw['Answer'][i][j]['d_sr_no'];
+                                    cell2.innerHTML = raw['Answer'][i][j]['l_sr_no'];
+                                    cell3.innerHTML = raw['Answer'][i][j]['date'];
+//                                    graphdata[k] = raw['Answer'][i][j]['readings'];
+                                    graphdata[k] = raw['Answer'][i][j];
+
+                                    cell4.setAttribute("name",k);
+                                    cell6.innerHTML = raw['Answer'][i][j]['company'];
+                                    cell7.innerHTML = raw['Answer'][i][j]['model'];
+
+                                    if (raw['Answer'][i][j]['status'] == "ok"){
+                                        row.className = "success";
+//                                        cell4.innerHTML = '<button type="button" class="btn btn-success" onclick="generateGraph(this.parentNode.getAttribute(\'name\'))">OpenChart</button>';
+                                        cell4.innerHTML = '<button type="button" class="btn btn-success" onclick="window.open(\'oldGraph.html?graph=\'+this.parentNode.getAttribute(\'name\'))">OpenChart</button>';
+                                        cell5.innerHTML = raw['Answer'][i][j]['status'];
+                                    }
+                                    else{
+                                        row.className = "danger";
+//                                        cell4.innerHTML = '<button type="button" class="btn btn-danger" onclick="generateGraph(this.parentNode.getAttribute(\'name\'))">Open Chart</button>';
+                                        cell4.innerHTML = '<button type="button" class="btn btn-danger" onclick="window.open(\'oldGraph.html?graph=\'+this.parentNode.getAttribute(\'name\'))">Open Chart</button>';
+                                        var dictionary = {"driver":cell1.innerHTML,"led":cell2.innerHTML,"company":cell6.innerHTML,"model":cell7.innerHTML};
+                                        dictionary = JSON.stringify(dictionary);
+                                        cell5.setAttribute("name",dictionary);
+                                        cell5.innerHTML = '<button type="button" class="btn btn-danger" onclick="regeneratedata(this.parentNode.getAttribute(\'name\'))">Retest</button>';
+                                    }
+                                }
+                                else{
+                                    cell1.innerHTML = raw['Answer'][i][j]['sr_no'];
+                                    cell2.innerHTML = raw['Answer'][i][j]['model'];
+                                    cell3.innerHTML = raw['Answer'][i][j]['date'];
+
+                                    if (flag){
+                                        drivers.push(cell1.innerHTML);
+                                    }
+                                    else{
+                                        leds.push(cell1.innerHTML);
+                                    }
+                                }
+                                k++;
+                            }
+                        }
+                    }
+
+                    document.getElementById("countDriver").innerHTML = "Total Count : " + '<h4><strong>'+drivers.length+'</strong></h4>';
+                    document.getElementById("countLed").innerHTML = "Total Count : " + '<h4><strong>'+leds.length+'</strong></h4>';
+                    document.getElementById("countDispatch").innerHTML = "Total Count : " + '<h4><strong>'+dispatchcount+'</strong></h4>';
+
+                    localStorage.setItem('oldgraphdata',JSON.stringify(graphdata));
+
+                }
+                else if (this.status == 0){
+                    document.getElementById("dberror").style.display = 'none';
+                    document.getElementById("error").style.display = 'block';
+                    error = setInterval(tableload(),3000);
+                }
+            };
+        }
+
+        function regeneratedata(dictionary) {
+            dictionary = JSON.parse(dictionary);
+            document.getElementById("inputdriver").value = dictionary["driver"];
+            document.getElementById("inputled").value = dictionary["led"];
+            document.getElementById("add_Company").value = dictionary["company"];
+            document.getElementById("add_Model").value = dictionary["model"];
+
+            entryalreadyexists = true;
+            button_count = 1;
+            getData(button_count);
+        }
+
+        function clearData() {
+            document.getElementById("id").value = "";
+            document.getElementById("model").value = "";
+            document.getElementById("checkdriver").checked = false;
+            document.getElementById("checkled").checked = false;
+        }
+
+        function addIDs() {
+            var flag = 0;
+            if (document.getElementById("checkdriver").checked != document.getElementById("checkled").checked){
+                if (document.getElementById("id").value == "" || document.getElementById("id").value == undefined ){
+                    document.getElementById("id_add").className = "form-group has-error";
+                    flag++;
+                }
+                else
+                    document.getElementById("id_add").className = "form-group has-success";
+
+                if (document.getElementById("model").value == "" || document.getElementById("model").value == undefined ){
+                    document.getElementById("model_add").className = "form-group has-error";
+                    flag++;
+                }
+                else
+                    document.getElementById("model_add").className = "form-group has-success";
+
+                var date = document.getElementById("date").value;
+                if (date == "" || date == undefined ){
+                    date = "00-00-00";
+                }
+
+                if (flag == 0){
+                    if (window.XMLHttpRequest) {
+                        // code for IE7+, Firefox, Chrome, Opera, Safari
+                        xmlhttp=new XMLHttpRequest();
+                    } else {  // code for IE6, IE5
+                        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+
+                    var httpstring  = "http://192.168.2.4:8000/addDevice?id=";
+                    httpstring += document.getElementById("id").value;
+                    httpstring += "&model=";
+                    httpstring += document.getElementById("model").value;
+                    httpstring += "&date=";
+                    httpstring += date;
+                    httpstring += "&dl=";
+                    httpstring += document.getElementById("checkdriver").checked;
+
+                    xmlhttp.open("GET",httpstring,true);
+                    xmlhttp.send();
+
+                    xmlhttp.onreadystatechange=function() {
+                        if (this.readyState == 4 && this.status == 200 && adddevicesonce) {
+                            document.getElementById('error').style.display = 'none';
+                            var raw = JSON.parse(this.response);
+                            console.log("Add Driver ot Led response :" + raw);
+
+                            if (raw['status'] == 504) {
+                                document.getElementById('dberror').style.display = 'block';
+                                error = setInterval(addIDs, 3000);
+                            }
+                            else if (raw['status'] == 501)
+                                document.getElementById('dbredudanterrorr').style.display = 'block';
+                            else if (raw['status'] == 503)
+                                document.getElementById('dboperationrrorr').style.display = 'block';
+                            else {
+                                adddevicesonce = false;
+
+                                if (document.getElementById("checkdriver").checked == true)
+                                    localStorage.setItem('driverdataupdated',true);
+                                else
+                                    localStorage.setItem('leddataupdated',true);
+
+                                document.getElementById('id').value = "";
+                                document.getElementById('model').value = "";
+                                document.getElementById('checkdriver').checked = false;
+                                document.getElementById('checkled').checked = false;
+
+                                window.location.reload();
+                                document.getElementById('success').style.display = 'block';
+                            }
+                        }
+                        else if (this.status == 0){
+                            document.getElementById("dberror").style.display = 'none';
+                            document.getElementById("error").style.display = 'block';
+                            error = setInterval(checkIDs,3000);
+                        }
+                    };
+                }
+            }
+        }
+
+        function getData(j) {
+            var i = 0;
+
+            button_count = j;
+            var driverID = document.getElementById('inputdriver').value;
+            var ledID = document.getElementById('inputled').value;
+            var company = document.getElementById('add_Company').value;
+            var model = document.getElementById('add_Model').value;
+
+            if (button_count == 1) {
+                if (driverID == "" || driverID == "undefined") {
+                    document.getElementById("driver_search").className = "form-group has-error";
+                    i++;
+                }
+                if (ledID == "" || ledID == "undefined") {
+                    document.getElementById("led_search").className = "form-group has-error";
+                    i++;
+                }
+                if (company == "" || company == "undefined") {
+                    document.getElementById("add_Company").className = "form-group has-error";
+                    i++;
+                }
+                if (model == "" || model == "undefined") {
+                    document.getElementById("add_Model").className = "form-group has-error";
+                    i++;
+                }
+                if (i == 0) {
+                    document.getElementById("check").className = 'btn btn-lg btn-default disabled';
+                    document.getElementById("test").className = 'btn btn-lg btn-default disabled';
+                    document.getElementById("ok").className = 'btn btn-lg btn-success disabled';
+                    document.getElementById("fail").className = 'btn btn-lg btn-danger disabled';
+//                    datainterval = setInterval(appendNewData, 3000);
+                    var dictionary = {};
+                    dictionary["d_sr_no"] = driverID;
+                    dictionary["l_sr_no"] = ledID;
+                    dictionary["company"] = company;
+                    dictionary["model"] = model;
+                    localStorage.setItem('currentgraphdata',JSON.stringify(dictionary));
+
+                    // var httpURL = "http://192.168.2.4:8000/currentGraphData?d_sr_no=";
+                    // httpURL += driverID;
+                    // httpURL += "&l_sr_no=" + ledID;
+                    // httpURL += "&company=" + company;
+                    // httpURL += "&model=" + model;
+                    //
+                    // window.open(httpURL);
+                    window.open("currentGraph.html");
+                    button_count++;
+                }
+            }
+        }
+
+        function test(statusvalue) {
+
+            var i = 0;
+
+            var driverID = document.getElementById('inputdriver').value;
+            var ledID = document.getElementById('inputled').value;
+            var company = document.getElementById('add_Company').value;
+            var model = document.getElementById('add_Model').value;
+
+            if (button_count == 2) {
+
+                if (driverID == "" || driverID == "undefined") {
+                    document.getElementById("driver_search").className = "form-group has-error";
+                    i++;
+                }
+                if (ledID == "" || ledID == "undefined") {
+                    document.getElementById("led_search").className = "form-group has-error";
+                    i++;
+                }
+                if (company == "" || company == "undefined") {
+                    document.getElementById("add_Company").className = "form-group has-error";
+                    i++;
+                }
+                if (model == "" || model == "undefined") {
+                    document.getElementById("add_Model").className = "form-group has-error";
+                    i++;
+                }
+                if (i == 0) {
+                    if (window.XMLHttpRequest) {
+                        // code for IE7+, Firefox, Chrome, Opera, Safari
+                        xmlhttp = new XMLHttpRequest();
+                    } else {  // code for IE6, IE5
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+
+                    var httpstring = "http://192.168.2.4:8000/test?driver=";
+                    httpstring += driverID;
+                    httpstring += "&led=";
+                    httpstring += ledID;
+                    httpstring += "&status=";
+                    httpstring += statusvalue;
+                    httpstring += "&company=";
+                    httpstring += company;
+                    httpstring += "&model=";
+                    httpstring += model;
+                    httpstring += "&valueexists=";
+                    httpstring += entryalreadyexists;
+
+                    if (statusvalue == "fail") {
+                        document.getElementById("test").className = 'btn btn-lg btn-info';
+                        document.getElementById("test").innerHTML = 'Retest';
+                    }
+
+                    //alert(httpstring);
+                    xmlhttp.open("GET", httpstring, true);
+                    xmlhttp.send();
+
+                    xmlhttp.onreadystatechange = function () {
+                        if (this.readyState == 4 && this.status == 200 && adddispatcheddataonce) {
+                            clearInterval(error);
+                            document.getElementById('error').style.display = 'none';
+                            var raw = JSON.parse(this.response);
+                            console.log("Test response :" + raw);
+
+                            if (raw['status'] == 504) {
+                                document.getElementById('dberror').style.display = 'block';
+                                error = setInterval(test(statusvalue), 3000);
+                            }
+                            else if (raw['status'] == 501) {
+                                document.getElementById('dbredudanterrorr').style.display = 'block';
+                                //error = setInterval(test(statusvalue), 3000);
+                            }
+                            else if (raw['status'] == 503) {
+                                document.getElementById('dboperationrrorr').style.display = 'block';
+                                //error = setInterval(test(statusvalue), 3000);
+                            }
+                            else {
+                                adddispatcheddataonce = false;
+                                document.getElementById("check").className = 'btn btn-lg btn-primary';
+                                document.getElementById("test").className = 'btn btn-lg btn-primary disabled';
+                                document.getElementById("ok").className = 'btn btn-lg btn-success disabled';
+                                document.getElementById("fail").className = 'btn btn-lg btn-danger disabled';
+                                document.getElementById('inputdriver').value = "";
+                                document.getElementById('inputled').value = "";
+                                entryalreadyexists = false;
+
+
+                                localStorage.setItem('leddataupdated',true);
+                                localStorage.setItem('driverdataupdated',true);
+                                localStorage.setItem('dispatcheddata',true);
+
+                                button_count = 0;
+                                window.location.reload();
+                                document.getElementById("success").style.display = 'block';
+                            }
+                        }
+                        else if (this.status == 0) {
+                            document.getElementById("dberror").style.display = 'none';
+                            document.getElementById("error").style.display = 'block';
+                            error = setInterval(test(statusvalue), 3000);
+                        }
+                    };
+                }
+            }
+        }
+
+        function getExcelFile() {
+            window.open("http://192.168.2.4:8000/download");
+        }
+    </script>
+</head>
+<body onload="tableload()" style="overflow-x: scroll">
+
+<div class="row black container-fluid text-center">
+    <div class="col-lg-4 col-md-4 col-sm-4">
+        <button class="btn-primary" onclick="window.open('testing.html')" style="height: 80px; width: 180px; padding: 1%">R & D</button>
+    </div>
+    <div class="col-lg-4 col-md-4 col-sm-4">
+        <h1>Mul Light Automation</h1>
+    </div>
+    <div class="col-lg-4 col-md-4 col-sm-4">
+        <button class="btn-primary" onclick="getExcelFile()" style="height: 80px; width: 180px; padding: 1%">Excel</button>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row ">
+        <div class="col-lg-3 col-md-6 col-sm-12" onclick="window.open('driver.html')">
+            <div id="driverH3" class="row center-block">
+                <h3 class="col-lg-6 col-md-6 col-sm-6 col-xs-6 text-center">
+                    Drivers
+                    <h5 id="countDriver" class="col-lg-4 col-md-4 col-sm-4 col-xs-4 text-center" style="padding-top: 10px">Total Count : 0</h5>
+                </h3>
+            </div>
+            <table class="table table-responsive table-hover text-center">
+                <thead>
+                <tr>
+                    <th>Serial No</th>
+                    <th>Model</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
+                <tbody id="driver"></tbody>
+            </table>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div id="ledH3" class="row center-block" onclick="window.open('led.html')">
+                <h3 class="col-lg-6 col-md-6 col-sm-6 col-xs-6 text-center">
+                    Led
+                    <h5 id="countLed" class="col-lg-4 col-md-4 col-sm-4 col-xs-4 text-center" style="padding-top: 10px">Total Count :0</h5>
+                </h3>
+            </div>
+            <table class="table table-responsive table-hover text-center">
+                <thead>
+                <tr>
+                    <th>Serial No</th>
+                    <th>Model</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
+                <tbody id="led"></tbody>
+            </table>
+        </div>
+        <div class="col-lg-6 col-md-12 col-sm-12">
+            <div id="dispatchedH3" class="row center-block" onclick="window.open('dispatched.html')">
+                <h3 class="col-lg-7 col-md-7 col-sm-7 col-xs-7 text-center">
+                    Dispatched
+                    <h5 id="countDispatch" class="col-lg-3 col-md-3 col-sm-3 col-xs-3 text-center" style="padding-top: 10px">Total Count :0</h5>
+                </h3>
+            </div>
+            <table class="table table-responsive table-hover text-center">
+                <thead>
+                <tr>
+                    <th>Driver Serial No</th>
+                    <th>Led Serial No</th>
+                    <th>Date</th>
+                    <th>Readings</th>
+                    <th>Status</th>
+                    <th>Company</th>
+                    <th>Model</th>
+                </tr>
+                </thead>
+                <tbody id="dispatch"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row ">
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="row black">
+                <h2 class="text-center">Add Led & Drivers</h2>
+            </div>
+            <br>
+            <form class="form-horizontal" autocomplete="on">
+                <div class="col-lg-offset-4 col-md-offset-3">
+                    <input type="radio" name="driver" id="checkdriver"><strong>Add Driver</strong>
+                    <input type="radio" name="led" id="checkled"><strong>Add Led</strong>
+                </div>
+                <br>
+                <div id="id_add" class="form-group">
+                    <label class="col-lg-4 control-label" for="id"><h4><strong>Add Driver/Led</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="id" placeholder="Id" autocomplete="on" required>
+                    </div>
+                </div>
+                <div id="model_add" class="form-group">
+                    <label class="col-lg-4 control-label" for="model"><h4><strong>Model No</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="model" placeholder="Model No" autocomplete="on" required>
+                    </div>
+                </div>
+                <div id="id_date" class="form-group">
+                    <label class="col-lg-4 control-label" for="id"><h4><strong>Add Date</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="date" placeholder="DD-MM-YY (12-04-17)" autocomplete="on" required>
+                    </div>
+                </div>
+                <div class="btn-group col-lg-offset-5 col-md-offset-4 col-sm-offset-5 col-xs-offset-4">
+                    <button id="add" type="button" class="btn btn-lg btn-primary" onclick="addIDs()">Add</button>
+                    <button id="clear" type="button" class="btn btn-lg btn-info" onclick="clearData()">Clear</button>
+                </div>
+            </form>
+        </div>
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <div class="row black">
+                <h2 class="text-center">Test</h2>
+            </div>
+            <br>
+            <div class="form-horizontal">
+                <div id="driver_search" class="form-group">
+                    <label class="col-lg-4 control-label" for="inputdriver"><h4><strong>Input Driver Id</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="inputdriver" placeholder="Driver Id">
+                    </div>
+                </div>
+                <div id="led_search" class="form-group">
+                    <label class="col-lg-4 control-label" for="inputled"><h4><strong>Input Led Id</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="inputled" placeholder="Led Id">
+                    </div>
+                </div>
+                <div id="addCompany" class="form-group">
+                    <label class="col-lg-4 control-label" for="add_Company"><h4><strong>Add Company</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="add_Company" placeholder="Company">
+                    </div>
+                </div>
+                <div id="addModel" class="form-group">
+                    <label class="col-lg-4 control-label" for="add_Model"><h4><strong>Add Model</strong></h4></label>
+                    <div class="col-lg-5">
+                        <input type="text" class="form-control" id="add_Model" placeholder="Model">
+                    </div>
+                </div>
+                <div class="btn-group col-lg-offset-4 col-md-offset-3 col-sm-offset-4">
+                    <button id="check" type="button" class="btn btn-lg btn-primary" onclick="checkIDs()">Check</button>
+                    <button id="test" type="button" class="btn btn-lg btn-primary disabled" onclick="getData(button_count)">Test</button>
+                    <button id="ok" type="button" class="btn btn-lg btn-success disabled" onclick="test('ok')">Ok</button>
+                    <button id="fail" type="button" class="btn btn-lg btn-danger disabled" onclick="test('fail')">Fail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br />
+<!-- Error Modal -->
+<div class="modal" id="error">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Server Cannot be found</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- DB Error Modal -->
+<div class="modal" id="dberror">
+    <div class="modal-dialog ">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Database Cannot be found</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Driver or lod already exists Modal -->
+<div class="modal" id="dbredudanterrorr">
+    <div class="modal-dialog ">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <button type="button" class="close" onclick="closemodel()">&times;</button>
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Same value found in Database</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- DB operation cannot be performed Modal -->
+<div class="modal" id="dboperationrrorr">
+    <div class="modal-dialog ">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #800000; color: white">
+                <button type="button" class="close" onclick="closemodel()">&times;</button>
+                <h2 class="modal-title text-center">Error</h2>
+            </div>
+            <div class="modal-body" style="background-color: #DC143C; color: white">
+                <h3 class="text-center">Operation can not be performed</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal" id="success">
+    <div class="modal-dialog ">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #006400; color: white">
+                <button type="button" class="close" onclick="closemodel()">&times;</button>
+                <h2 class="modal-title text-center">Success</h2>
+            </div>
+            <div class="modal-body" style="background-color: #32CD32; color: black">
+                <h3 class="text-center">Operation Performed successfully</h3>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(window).focus(function () {
+        var led = localStorage.getItem('leddataupdated');
+        var driver = localStorage.getItem('driverdataupdated');
+        var currentgraph = localStorage.getItem('currentgraph');
+        var dispatched = localStorage.getItem('dispatcheddata');
+        console.log(typeof led);
+        if (led === "true") {
+            localStorage.setItem('leddataupdated',false);
+            window.location.reload(true);
+        }
+        if (driver === "true"){
+            localStorage.setItem('driverdataupdated',false);
+            window.location.reload(true);
+        }
+        if (dispatched === "true"){
+            localStorage.setItem('dispatcheddata',false);
+            window.location.reload(true);
+        }
+        if (currentgraph === "true"){
+            document.getElementById("ok").className = 'btn btn-lg btn-success';
+            document.getElementById("fail").className = 'btn btn-lg btn-danger';
+            localStorage.setItem('currentgraph',false);
+        }
+    });
+
+    // window.onbeforeunload = function(e){
+    //     console.log(e.currentTarget.performance.navigation.type);
+    //     if (e.currentTarget.performance.navigation.type == 0) {
+    //         return "Do you want to leave index.html?"
+    //     }
+    // };
+
+    window.close = function () {
+        localStorage.setItem('leddataupdated',false);
+        localStorage.setItem('driverdataupdated',false);
+        localStorage.setItem('dispatcheddata',false);
+        localStorage.clear();
+
+    };
+
+    window.onunload = function(){
+        clearInterval(error);
+        console.log("Closing window");
+    };
+</script>
+
+</body>
+</html>

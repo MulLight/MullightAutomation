@@ -1,0 +1,157 @@
+.noMargin{
+    margin: 0 !important;
+}
+
+.noPadding{
+    padding: 0 !important;
+}
+
+.row{
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.black{
+    background-color: #111;
+    color: white;
+}
+
+/* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 0; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 100%;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    -webkit-animation-name: animatetop;
+    -webkit-animation-duration: 0.4s;
+    animation-name: animatetop;
+    animation-duration: 0.4s
+}
+
+/* Add Animation */
+@-webkit-keyframes animatetop {
+    from {top:-300px; opacity:0}
+    to {top:0; opacity:1}
+}
+
+@keyframes animatetop {
+    from {top:-300px; opacity:0}
+    to {top:0; opacity:1}
+}
+
+/* The Close Button */
+.close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-header {
+    padding: 10px 16px;
+    background-color: #0f0f0f;
+    color: white;
+    width: 100%;
+}
+
+.modal-body {
+    padding: 10px 16px;
+    width: 100%;
+}
+
+.modal-footer {
+    padding: 2px 16px;
+    background-color: #0f0f0f;
+    color: white;
+}
+
+.btn{
+    z-index: 0 !important;
+}
+
+thead, th{
+    text-align: center;
+}
+
+tr {
+    width: 100%;
+    display: inline-table;
+    height:auto;
+    table-layout: fixed;
+
+}
+
+table{
+    height:300px;
+    display: -moz-groupbox;
+    margin-top: 0;
+    overflow: scroll;
+}
+tbody{
+  overflow: scroll;
+  height: 250px;
+  width: 100%;
+  position: absolute;
+}
+tfoot{
+  overflow-y: scroll;
+  width: 100%;
+  position: absolute;
+}
+
+.modal-lg{
+    width: 98%;
+}
+/* this targets the default scrollbar (compulsory) */
+::-webkit-scrollbar {
+    width: 5px;
+    height: auto;
+}
+/* the new scrollbar will have a flat appearance with the set background color */
+::-webkit-scrollbar-track {
+    background-color: white;
+}
+
+/* this will style the thumb, ignoring the track */
+::-webkit-scrollbar-thumb {
+    /*background-color: rgba(0, 0, 0, 0.3);*/
+    background-color: black;
+    opacity: 0.9;
+}
+
+/* optionally, you can style the top and the bottom buttons (left and right for horizontal bars) */
+::-webkit-scrollbar-button {
+    background-color: white;
+    opacity: 0.9;
+}
+
+/* if both the vertical and the horizontal bars appear, then perhaps the right bottom corner also needs to be styled */
+::-webkit-scrollbar-corner {
+    /*background-color: rgba(0, 0, 0, 0.3);*/
+    background-color: black;
+    opacity: 0.9;
+}

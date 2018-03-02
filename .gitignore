@@ -1,0 +1,6 @@
+*.idea/*
+*.vscode/*
+_pycache_/*
+*.xlsx
+*.xml
+*.iml

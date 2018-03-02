@@ -1,0 +1,23 @@
+
+---------server operation---------
+status:200
+    data received successfully and operation performed successfully
+status:201
+    data received but operation not performed
+status:202
+    bad request i.e(either parameter missing or spelling error)
+status:404
+    server not found
+
+------db operation-------
+status:504
+    db not found
+
+status:500
+    db operation performed successfully
+
+status:501
+    db redundant data found in db
+
+status:503
+    db operation could not be performed
