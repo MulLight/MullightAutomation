@@ -895,7 +895,8 @@ class MulLight(threading.Thread):
             tornado.ioloop.IOLoop.instance().start()
         elif (self.name == 'DB'):
             # subprocess.Popen(["C:\\Program Files\\MongoDB\\Server\\3.4\\bin\\mongod.exe", "--dbpath", "C:\data\db"])
-            subprocess.call(r"C:\Program Files\MongoDB\Server\3.6\bin\mongod.exe --dbpath C:\data\db")
+            if (os.name == "nt"):
+                subprocess.call(r"C:\Program Files\MongoDB\Server\3.6\bin\mongod.exe --dbpath C:\data\db")
             print("Database closed")
         else :
             print("----Serial Reading------")
