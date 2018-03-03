@@ -1,1 +1,7 @@
-git clone "https://github.com/MulLight/MullightAutomation.git"
+git stash
+git stash clear
+git pull
+
+mkdir "INIT"
+
+python3 main.py
