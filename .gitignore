@@ -4,3 +4,6 @@ _pycache_/*
 *.xlsx
 *.xml
 *.iml
+*.html
+*.css
+*.js

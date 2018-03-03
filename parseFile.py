@@ -1,19 +1,21 @@
 import os
 import socket
+import netifaces as ni
 
 def parse():
+
+    ipaddress = ""
+    for interface in ni.interfaces():
+        try:
+            if not ni.ifaddresses(interface)[ni.AF_INET][0]['addr'].__contains__("127"):
+                ipaddress = ni.ifaddresses(interface)[ni.AF_INET][0]['addr']
+        except KeyError as k:
+            if k == 2:
+                pass
+
     print("IP address :",socket.gethostbyname(socket.gethostname())+":8000")
     cwd = os.getcwd()  # used by static file server
     print("Current Working directory :" + cwd)
-
-    ipaddress = ""
-    if (os.name == "nt"):
-        ipaddress = socket.gethostbyname(socket.gethostname())
-    else:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ipaddress = s.getsockname()[0]
-        s.close()
 
     onlyfiles = [f for f in os.listdir(cwd) if os.path.isfile(os.path.join(cwd, f))]
     for htmlFile in onlyfiles:
