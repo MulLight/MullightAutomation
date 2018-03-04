@@ -4,4 +4,4 @@ git pull
 
 mkdir "INIT"
 
-python3 main.py
+python3 main.py &
