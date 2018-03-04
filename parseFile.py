@@ -1,5 +1,4 @@
 import os
-import socket
 import netifaces as ni
 
 def parse():
@@ -13,7 +12,7 @@ def parse():
             if k == 2:
                 pass
 
-    print("IP address :",socket.gethostbyname(socket.gethostname())+":8000")
+    print("IP address :",ipaddress+":8000")
     cwd = os.getcwd()  # used by static file server
     print("Current Working directory :" + cwd)
 
