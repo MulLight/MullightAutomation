@@ -24,12 +24,6 @@ then
 pip3 install motor
 fi
 
-xlsxwriter=`echo $pip3list | grep -c xlsxwriter`
-if [ $xlsxwriter -lt 1 ]
-then
-pip3 install xlsxwriter
-fi
-
 openpyxl=`echo $pip3list | grep -c openpyxl`
 if [ $openpyxl -lt 1 ]
 then
@@ -49,4 +43,4 @@ pip3 install pymongo
 fi
 
 
-sudo python3 main.py &
+python3 main.py &
